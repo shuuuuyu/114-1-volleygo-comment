@@ -24,8 +24,8 @@ jobs:
       
       - name: Keep Supabase Active
         env:
-          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           echo "Testing Supabase connection..."
           curl -s "${SUPABASE_URL}/rest/v1/comments?limit=1" \
