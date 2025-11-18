@@ -1,35 +1,34 @@
-name: Keep Database Active
+name: Keep Services Active
 
 on:
   schedule:
-    # 每天早上 8:00 UTC (台灣時間 16:00) 執行
-    - cron: '0 8 * * *'
-  workflow_dispatch: # 允許手動觸發
+    - cron: '0 */6 * * *'  # 每 6 小時執行一次
+  workflow_dispatch:
 
 jobs:
-  keep-alive:
+  ping-services:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Send test comment to database
+      - name: Ping Volleyball API
+        run: |
+          echo "Pinging API health endpoint..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://one14-1-volleygo-api.onrender.com/health)
+          echo "Response code: $response"
+          if [ "$response" = "200" ]; then
+            echo "✅ API is healthy!"
+          else
+            echo "❌ API returned $response"
+            exit 1
+          fi
+      
+      - name: Keep Supabase Active
         env:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
-          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          curl -X POST "${SUPABASE_URL}/rest/v1/comments" \
+          echo "Testing Supabase connection..."
+          curl -s "${SUPABASE_URL}/rest/v1/comments?limit=1" \
             -H "apikey: ${SUPABASE_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_KEY}" \
-            -H "Content-Type: application/json" \
-            -H "Prefer: return=minimal" \
-            -d @- << EOF
-          {
-            "post_id": "keep_alive_test",
-            "user_id": "system",
-            "user_email": "system@keepalive.com",
-            "content": "System keep-alive test - ${TIMESTAMP}"
-          }
-          EOF
-      
-      - name: Success
-        run: echo "✅ Keep-alive request sent successfully!"
+            -H "Authorization: Bearer ${SUPABASE_KEY}"
+          echo "✅ Supabase is active!"
