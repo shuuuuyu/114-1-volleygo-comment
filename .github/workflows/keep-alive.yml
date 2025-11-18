@@ -1,0 +1,29 @@
+name: Keep Database Active
+
+on:
+  schedule:
+    # 每周日午夜
+    - cron: '0 0 * * 0'
+  workflow_dispatch: # 允許手動觸發
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Send test comment to database
+        run: |
+          curl -X POST '${{ secrets.VITE_SUPABASE_URL }}/rest/v1/comments' \
+            -H "apikey: ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{
+              "post_id": "keep_alive_test",
+              "user_id": "system",
+              "user_email": "system@keepalive.com",
+              "content": "System keep-alive test - '$(date)'"
+            }'
+      
+      - name: Success
+        run: echo "✅ Keep-alive request sent successfully!"
