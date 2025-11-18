@@ -2,8 +2,8 @@ name: Keep Database Active
 
 on:
   schedule:
-    # 每周日午夜
-    - cron: '0 0 * * 0'
+    # 每天早上 8:00 UTC (台灣時間 16:00) 執行
+    - cron: '0 8 * * *'
   workflow_dispatch: # 允許手動觸發
 
 jobs:
@@ -12,18 +12,24 @@ jobs:
     
     steps:
       - name: Send test comment to database
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
-          curl -X POST '${{ secrets.VITE_SUPABASE_URL }}/rest/v1/comments' \
-            -H "apikey: ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          curl -X POST "${SUPABASE_URL}/rest/v1/comments" \
+            -H "apikey: ${SUPABASE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_KEY}" \
             -H "Content-Type: application/json" \
             -H "Prefer: return=minimal" \
-            -d '{
-              "post_id": "keep_alive_test",
-              "user_id": "system",
-              "user_email": "system@keepalive.com",
-              "content": "System keep-alive test - '$(date)'"
-            }'
+            -d @- << EOF
+          {
+            "post_id": "keep_alive_test",
+            "user_id": "system",
+            "user_email": "system@keepalive.com",
+            "content": "System keep-alive test - ${TIMESTAMP}"
+          }
+          EOF
       
       - name: Success
         run: echo "✅ Keep-alive request sent successfully!"
